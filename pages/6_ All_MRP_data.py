@@ -24,7 +24,7 @@ st.header("Download all MRP Data")
 
 @st.cache_data
 def convert_df(df):
-    return df.to_csv(index=True).encode('utf-8')
+    return df.to_csv(index=False).encode('utf-8')
 
 csv_00 = convert_df(data)
 st.download_button(
