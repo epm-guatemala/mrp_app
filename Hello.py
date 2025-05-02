@@ -42,4 +42,3 @@ st.markdown(
 """
 )
 
-
