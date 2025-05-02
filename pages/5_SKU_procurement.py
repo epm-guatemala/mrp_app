@@ -39,16 +39,16 @@ df= data[data['sku'].isin(options)]
 cols=  ['sku',
         'inventory_purchase_eegsa',
         'purchase_type_eegsa',
-        'inventory_purchase_eegsa_valuation',
+        #'inventory_purchase_eegsa_valuation',
         'inventory_purchase_trelec',
         'purchase_type_trelec',
-        'inventory_purchase_trelec_valuation',
+        #'inventory_purchase_trelec_valuation',
         'inventory_purchase_amesa',
         'purchase_type_amesa',
-        'inventory_purchase_amesa_valuation',
+        #'inventory_purchase_amesa_valuation',
         'inventory_purchase_energica',
         'purchase_type_energica',
-        'inventory_purchase_energica_valuation',
+        #'inventory_purchase_energica_valuation',
         'year_month']
 
 df= df[cols]
