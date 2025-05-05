@@ -10,13 +10,47 @@ import numpy as np
 def load_data():
     # Create a connection object.
     from streamlit_gsheets import GSheetsConnection
-    conn = st.connection("gsheets", type=GSheetsConnection)
+    conn = st.connection("mrp", type=GSheetsConnection)
     df = conn.read()
     return df
 
-#%% Loading
+@st.cache_data
+def load_data_second():
+    # Create a connection object.
+    from streamlit_gsheets import GSheetsConnection
+    conn = st.connection("mm", type=GSheetsConnection)
+    df = conn.read()
+    return df
 
-data_load_state = st.text('Loading data...')
+#%% Loading material master
+
+data_load_state = st.text('Loading Material Master data...')
+df_mm= load_data_second()
+data_load_state.text("Done! (using st.cache_data)")
+df_mm_clean= df_mm[((df_mm['mrp']=='si') | (df_mm['mto']=='si') | (df_mm['min_stock']=='si')) & (df_mm['obsoleto']=='no')]
+df_mm_clean= df_mm_clean.drop_duplicates(subset= ['sap_codigo', 'sociedad'])
+
+# all skus per company
+df_sku_sociedad= pd.pivot_table(df_mm_clean,
+               index= 'sociedad',
+               values= 'sap_codigo',
+               aggfunc= 'count')
+df_sku_sociedad.index = df_sku_sociedad.index.str.lower()
+df_sku_sociedad.columns= ['total_skus']
+
+# binary matrix from skus and companies
+df_binary = pd.DataFrame({'sap_codigo': df_mm_clean['sap_codigo'], 
+                          'sociedad': df_mm_clean['sociedad']})
+df_binary= df_binary.drop_duplicates()
+binary_matrix = pd.crosstab(df_binary['sap_codigo'], df_binary['sociedad'])
+shared_skus = binary_matrix.T.dot(binary_matrix)
+shared_skus.index = shared_skus.index.str.lower()
+shared_skus.columns = [elem.lower() for elem in shared_skus.columns]
+proportion_df= shared_skus.div(np.diag(shared_skus), axis = 0).round(2)
+
+#%% Loading MRP
+
+data_load_state = st.text('Loading MRP data...')
 data = load_data()
 data_load_state.text("Done! (using st.cache_data)")
 
@@ -82,7 +116,12 @@ df_pivot= pd.pivot_table(df_melted,
                aggfunc= 'count')
 
 df_pivot= df_pivot['emergency'].sort_values(ascending=False)
+df_pivot= pd.DataFrame(df_pivot)
+df_pivot.columns= ['emergency_skus'] 
+
+df_pivot= pd.concat([df_pivot,df_sku_sociedad], axis = 1)
 df_pivot.loc["Total"] = df_pivot.sum()
+df_pivot['emergency_proportion']=(df_pivot['emergency_skus']/df_pivot['total_skus']).round(2)
 
 #%% emergencies per unique sku
 
@@ -112,6 +151,13 @@ def convert_df(df):
    return df.to_csv(index=False).encode('utf-8')
 
 #%% Visualization
+
+st.title('EPM SKUs')
+st.header("SKUS sharing between companies (unique count)")
+st.dataframe(shared_skus)
+
+st.header("SKUS sharing between companies (proportion)")
+st.dataframe(proportion_df)
 
 st.title('EPM SKU emergencies')
 st.write('At a minimum, one delivery is required, and the known lead time exceeds the time remaining until the delivery date.')

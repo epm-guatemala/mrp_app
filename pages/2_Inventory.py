@@ -11,7 +11,7 @@ import pandas as pd
 def load_data():
     # Create a connection object.
     from streamlit_gsheets import GSheetsConnection
-    conn = st.connection("gsheets", type=GSheetsConnection)
+    conn = st.connection("mrp", type=GSheetsConnection)
     df = conn.read()
     return df
 
@@ -44,6 +44,7 @@ df = data[cols]
 cols_options = [
     'all',
     'eegsa',
+    'eegsa_vad',
     'trelec',
     'amesa',
     'energica']
@@ -58,12 +59,14 @@ df_pivot= pd.pivot_table(df,
 df_pivot= (df_pivot/1000000).round(3)
 df_pivot['all']=df_pivot.sum(axis= 1)
 
+# adding vad eegsa regulatory limit
+df_pivot['eegsa_vad']= 4.5/100*746*7.80
+
 options = st.multiselect(
     "Select the companies you are interested in:",
     cols_options,
     default=["eegsa", "trelec"],
 )
-
 st.write("You selected:", options)
 
 #%% Visualization

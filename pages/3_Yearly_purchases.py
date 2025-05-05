@@ -9,7 +9,7 @@ import pandas as pd
 def load_data():
     # Create a connection object.
     from streamlit_gsheets import GSheetsConnection
-    conn = st.connection("gsheets", type=GSheetsConnection)
+    conn = st.connection("mrp", type=GSheetsConnection)
     df = conn.read()
     return df
 
