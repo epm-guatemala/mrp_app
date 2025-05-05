@@ -120,7 +120,7 @@ df_pivot= pd.DataFrame(df_pivot)
 df_pivot.columns= ['emergency_skus'] 
 
 df_pivot= pd.concat([df_pivot,df_sku_sociedad], axis = 1)
-df_pivot.loc["Total"] = df_pivot.sum()
+df_pivot.loc['total'] = df_pivot.sum()
 df_pivot['emergency_proportion']=(df_pivot['emergency_skus']/df_pivot['total_skus']).round(2)
 
 #%% emergencies per unique sku
