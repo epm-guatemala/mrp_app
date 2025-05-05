@@ -6,9 +6,7 @@ st.set_page_config(
     page_icon="👋",
 )
 
-st.write("# Definitions 👋")
-
-st.sidebar.success("Select the page")
+st.write("# Definitions")
 
 st.markdown(
     """
