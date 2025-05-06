@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 @st.cache_data
-def load_data():
+def load_data_mrp():
     # Create a connection object.
     from streamlit_gsheets import GSheetsConnection
     conn = st.connection("mrp", type=GSheetsConnection)
@@ -15,7 +15,7 @@ def load_data():
     return df
 
 @st.cache_data
-def load_data_second():
+def load_data_mm():
     # Create a connection object.
     from streamlit_gsheets import GSheetsConnection
     conn = st.connection("mm", type=GSheetsConnection)
@@ -25,7 +25,7 @@ def load_data_second():
 #%% Loading material master
 
 data_load_state = st.text('Loading Material Master data...')
-df_mm= load_data_second()
+df_mm= load_data_mm()
 data_load_state.text("Done! (using st.cache_data)")
 df_mm_clean= df_mm[((df_mm['mrp']=='si') | (df_mm['mto']=='si') | (df_mm['min_stock']=='si')) & (df_mm['obsoleto']=='no')]
 df_mm_clean= df_mm_clean.drop_duplicates(subset= ['sap_codigo', 'sociedad'])
@@ -51,7 +51,7 @@ proportion_df= shared_skus.div(np.diag(shared_skus), axis = 0).round(2)
 #%% Loading MRP
 
 data_load_state = st.text('Loading MRP data...')
-data = load_data()
+data = load_data_mrp()
 data_load_state.text("Done! (using st.cache_data)")
 
 #columns
@@ -79,6 +79,7 @@ dict_sku_description= dict(zip(df['sku'], df['sku_description']))
 dict_sku_family= dict(zip(df['sku'], df['sku_family']))
 
 #%% emergencies per sku x company
+
 ls_sku= []
 ls_sku_all_emerg= []
 
