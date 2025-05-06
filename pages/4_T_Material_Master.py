@@ -73,7 +73,7 @@ st.title('EPM GUA Material Master')
 st.header("SKUS sharing between companies (unique count)")
 st.dataframe(shared_skus)
 
-st.header("SKUS sharing between companies (proportion)")
+st.header("SKUS sharing between companies (proportion, unique count)")
 st.dataframe(proportion_df)
 
 st.header("MRP-MTO-MIN SKU distribution (non-unique count)")

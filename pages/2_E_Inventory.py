@@ -15,16 +15,8 @@ def load_data_mrp():
     df = conn.read()
     return df
 
-@st.cache_data
-def load_data_mm():
-    # Create a connection object.
-    from streamlit_gsheets import GSheetsConnection
-    conn = st.connection("mm", type=GSheetsConnection)
-    df = conn.read()
-    return df
 
-
-st.title('EPM Materiales Material Requirement Planning')
+#%% Downloading dataframe
 
 data_load_state = st.text('Loading data...')
 data = load_data_mrp()
@@ -71,6 +63,10 @@ df_pivot['all']=df_pivot.sum(axis= 1)
 # adding vad eegsa regulatory limit
 df_pivot['eegsa_vad']= 4.5/100*746*7.80
 
+#%% Visualization
+
+st.title('EPM Materiales Material Requirement Planning')
+
 options = st.multiselect(
     "Select the companies you are interested in:",
     cols_options,
@@ -78,13 +74,13 @@ options = st.multiselect(
 )
 st.write("You selected:", options)
 
-#%% Visualization
-
+# Inventory simulation
 st.header("Initial monthly inventory simulation")
 st.write('For EEGSA the recognized regulatory inventory equals 4.5% of 746 MUSD or MGTQ 262')
 df_pivot= df_pivot[options]
 chart_data = pd.DataFrame(df_pivot, columns=cols_options)
 st.line_chart(chart_data, y_label='MGTQ', x_label= 'year_month')
+
 
 #%% Download data
 
