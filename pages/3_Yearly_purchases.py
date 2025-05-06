@@ -53,14 +53,13 @@ df_year= pd.pivot_table(df,
     )
 
 df_year= (df_year/1000000).round(2)
-df_year["Total"] = df_year.sum(axis= 1)
-df_year.loc["Total"] = df_year.sum()
+df_year["total"] = df_year.sum(axis= 1)
 
 df_year= df_year[['inventory_purchase_eegsa_valuation',
 'inventory_purchase_trelec_valuation',
 'inventory_purchase_amesa_valuation',
 'inventory_purchase_energica_valuation',
-'Total']]
+'total']]
 
 
 #%% Showing
