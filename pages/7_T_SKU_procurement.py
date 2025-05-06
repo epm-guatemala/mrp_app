@@ -20,21 +20,16 @@ data_load_state = st.text('Loading data...')
 data = load_data()
 data_load_state.text("Done! (using st.cache_data)")
 
-
 # Selection of SKU of interest
-ls_skus= data['sku'].unique()
-options = st.multiselect(
-    "Select the companies you are interested in:",
-    ls_skus,
-    default=["42-3082"],
-    max_selections=1
-)
+option= st.selectbox(
+    "Select the sku you are interested in:",
+    data['sku'].unique())
 
 # Creating dictionaries
 dict_sku_description= dict(zip(data['sku'], data['sku_description']))
 dict_sku_family= dict(zip(data['sku'], data['sku_family']))
 
-df= data[data['sku'].isin(options)]
+df= data[data['sku'].isin([option])]
 
 cols=  ['sku',
         'inventory_purchase_eegsa',
@@ -53,7 +48,7 @@ cols=  ['sku',
 
 df= df[cols]
 
-st.write(f'Description: {dict_sku_description[options[0]]} - Family: {dict_sku_family[options[0]]}')
+st.write(f'Description: {dict_sku_description[option]} - Family: {dict_sku_family[option]}')
 st.write('All currencies in GTQ')
 
 df= df.set_index('year_month')
