@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import re
 import matplotlib.pyplot as plt
+import io
 
 @st.cache_data
 def load_data():
@@ -186,9 +187,54 @@ plt.ylabel('Total Purchase Amount (#)')
 st.header("Graphical MP per sku")
 st.pyplot(fig_mrp)
 
+# Save plot to BytesIO buffer
+buf = io.BytesIO()
+fig_mrp.savefig(buf, format="png", dpi=300, bbox_inches='tight')
+buf.seek(0)
+
+# Streamlit download button
+st.download_button(
+    label="📥 Download material planning as PNG",
+    data=buf,
+    file_name=f'mp_{option_sku}.png',
+    mime="image/png"
+)
+
 st.header("Required purchases")
 st.pyplot(fig_purchases)
+
+# Save plot to BytesIO buffer
+buf = io.BytesIO()
+fig_purchases.savefig(buf, format="png", dpi=300, bbox_inches='tight')
+buf.seek(0)
+
+# Streamlit download button
+st.download_button(
+    label="📥 Download purchases as PNG",
+    data=buf,
+    file_name=f'p_{option_sku}.png',
+    mime="image/png"
+)
 
 #showing tabular data
 st.header("Tabular MP per sku")
 st.dataframe(df_final.T)
+
+@st.cache_data
+def convert_df(df):
+    # Convert DataFrame to CSV in memory with UTF-8 BOM encoding
+    output = io.BytesIO()
+    df.to_csv(output, index=True, encoding='utf-8-sig')  # <-- BOM added here
+    return output.getvalue()
+
+csv_00 = convert_df(df_final)
+st.download_button(
+   "📥 Download dataframe (.csv)",
+   csv_00,
+   f'dataframe_{option_sku}.csv',
+   "text/csv",
+   key='download-csv-00'
+)
+
+
+
