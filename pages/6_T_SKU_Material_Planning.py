@@ -236,5 +236,3 @@ st.download_button(
    key='download-csv-00'
 )
 
-
-
