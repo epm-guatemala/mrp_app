@@ -174,7 +174,8 @@ ax.bar(df_final.index,
        df_final['inventory_purchase'])
 plt.xticks(np.arange(0, int_window, 1), 
            df_final.index, 
-           fontsize= 4, rotation= 45)
+           fontsize= 4, 
+           rotation= 45)
 plt.grid(color='lightgrey', axis='y')
 plt.title(f'Purchase Amounts for {option_sku}')
 plt.xlabel('year_month')
