@@ -8,17 +8,26 @@ import pandas as pd
 #%% Loading
 
 @st.cache_data
-def load_data():
+def load_data_mrp():
     # Create a connection object.
     from streamlit_gsheets import GSheetsConnection
     conn = st.connection("mrp", type=GSheetsConnection)
     df = conn.read()
     return df
 
+@st.cache_data
+def load_data_mm():
+    # Create a connection object.
+    from streamlit_gsheets import GSheetsConnection
+    conn = st.connection("mm", type=GSheetsConnection)
+    df = conn.read()
+    return df
+
+
 st.title('EPM Materiales Material Requirement Planning')
 
 data_load_state = st.text('Loading data...')
-data = load_data()
+data = load_data_mrp()
 data_load_state.text("Done! (using st.cache_data)")
 
 #columns
