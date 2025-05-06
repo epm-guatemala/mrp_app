@@ -70,7 +70,7 @@ st.title('EPM Materiales Material Requirement Planning')
 options = st.multiselect(
     "Select the companies you are interested in:",
     cols_options,
-    default=['eegsa', 'eegsa_vad'],
+    default=["eegsa", "eegsa_vad"],
 )
 st.write("You selected:", options)
 
