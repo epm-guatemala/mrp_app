@@ -1,12 +1,15 @@
+#%% importing packages
 
 import streamlit as st
+
+#%% webpage
 
 st.set_page_config(
     page_title="Hello",
     page_icon="👋",
 )
 
-st.write("# Bienvenido al MRP EPM Guatemala! 👋")
+st.write("# Bienvenido al MP EPM Guatemala! 👋")
 
 st.sidebar.success("Select a page")
 
@@ -20,7 +23,7 @@ st.markdown(
     - EEGSA
     - TRELEC
     - AMESA
-    - Enérgica
+    - ENÉRGICA
     
     Cada material determinado como almacenable, puede tener cinco (5) formas
     excluyentes de aprovisionamiento (ninguna otra combinación es posible o permitida):
@@ -43,9 +46,9 @@ st.markdown(
     - MIN (Minimum inventory): En cualquier momento esta cantidad debería estar
     disponible en inventario.
     
-    El MP de EPM Guatemala determina por material las cantidades y momentos
-    de abastecimiento. Para ello tiene input y output variables, que abajo se 
-    detallan:
+    El MP determina por material las cantidades y momentos de abastecimiento, 
+    con un horizonte rolling de planificación de al menos cuatro (4) años. 
+    Para ello tiene input y output variables, que abajo se detallan:
         
     ### Input variables
     #### Inventory
@@ -68,7 +71,6 @@ st.markdown(
     - Material purchases (quantities and moments)
     - Material purchase type (emergency / no emergency)
     - Monthly inventory (quantities and amount-GTQ)
-    
 """
 )
 

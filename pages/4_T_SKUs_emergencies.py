@@ -1,11 +1,21 @@
-# -*- coding: utf-8 -*-
-
 #%% Importing packages
 
 import streamlit as st
+from datetime import datetime
+import io
+
 import pandas as pd
 import numpy as np
-import io
+
+#%% Functions
+
+@st.cache_data
+def load_data_mm():
+    # Create a connection object.
+    from streamlit_gsheets import GSheetsConnection
+    conn = st.connection("mm", type=GSheetsConnection)
+    df = conn.read()
+    return df
 
 @st.cache_data
 def load_data_mrp():
@@ -16,12 +26,11 @@ def load_data_mrp():
     return df
 
 @st.cache_data
-def load_data_mm():
-    # Create a connection object.
-    from streamlit_gsheets import GSheetsConnection
-    conn = st.connection("mm", type=GSheetsConnection)
-    df = conn.read()
-    return df
+def convert_df(df):
+    # Convert DataFrame to CSV in memory with UTF-8 BOM encoding
+    output = io.BytesIO()
+    df.to_csv(output, index=False, encoding='utf-8-sig')  # <-- BOM added here
+    return output.getvalue()
 
 #%% Loading 
 
@@ -143,28 +152,24 @@ df_melted_sku_unique= df_melted_sku_unique[['sku_family','sku', 'sku_description
 df_melted_sku_unique= df_melted_sku_unique.sort_values('sku_family').reset_index(drop=True)
 df_melted_sku_unique.index = range(1, df_melted_sku_unique.shape[0]+1)
 
-#%% Download function
 
-@st.cache_data
-def convert_df(df):
-    # Convert DataFrame to CSV in memory with UTF-8 BOM encoding
-    output = io.BytesIO()
-    df.to_csv(output, index=False, encoding='utf-8-sig')  # <-- BOM added here
-    return output.getvalue()
+#%% website
 
-#%% Visualization
-
-st.title('EPM SKU emergencies')
-st.write('At a minimum, one delivery is required, and the known lead time exceeds the time remaining until the delivery date.')
+st.title('SKUs emergencies')
+st.write('At a minimum, one delivery is required and the known lead time exceeds \
+         the time remaining until the required delivery date.')
 
 st.header("SKUs in emergency state per company")
 st.dataframe(df_pivot)
 
+dt_now= datetime.now()
+dt_now= dt_now.strftime('%Y%m%d')
+
 csv_00 = convert_df(df_melted)
 st.download_button(
-   "📥 Download sku companies emergencies comma-separated values (.csv)",
+   "📥 Download companies SKUs emergencies as (.csv)",
    csv_00,
-   "sku_company_emergencies.csv",
+   f'{dt_now}_skus_company_emergencies.csv',
    "text/csv",
    key='download-csv-00'
 )
@@ -176,9 +181,9 @@ st.dataframe(df_melted_sku_unique)
 
 csv_01 = convert_df(df_melted_sku_unique)
 st.download_button(
-   "📥 Download sku emergencies as comma-separated values (.csv)",
+   "📥 Download SKU emergencies as (.csv)",
    csv_01,
-   "sku_emergencies.csv.csv",
+   f'{dt_now}_sku_emergencies.csv',
    "text/csv",
    key='download-csv-01'
 )
