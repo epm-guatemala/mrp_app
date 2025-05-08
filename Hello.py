@@ -71,6 +71,7 @@ st.markdown(
     - Material purchases (quantities and moments)
     - Material purchase type (emergency / no emergency)
     - Monthly inventory (quantities and amount-GTQ)
+    
 """
 )
 

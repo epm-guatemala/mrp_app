@@ -235,7 +235,7 @@ if option_company and option_sku:
     )
     
     #showing tabular data
-    st.header("Tabular Material Planning per SKU for all companies")
+    st.header(f'Tabular Material Planning per SKU for {option_company.upper()}')
     st.dataframe(df_final.T)
     
     csv_00 = convert_df(df_final)
