@@ -198,7 +198,7 @@ if option_company and option_sku:
     #%% website
     
     #showing graph
-    st.header("Graphical Material Planning")
+    st.header("Graphical Material Planning for {option_company.upper()}")
     st.pyplot(fig_mrp)
     
     # Save plot to BytesIO buffer
@@ -218,7 +218,7 @@ if option_company and option_sku:
         mime="image/png"
     )
     
-    st.header("Graphical required purchases")
+    st.header("Graphical required purchases for {option_company.upper()}")
     st.pyplot(fig_purchases)
     
     # Save plot to BytesIO buffer
