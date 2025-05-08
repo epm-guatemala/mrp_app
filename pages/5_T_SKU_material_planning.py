@@ -7,7 +7,8 @@ from datetime import datetime
 import re
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 #%% functions
 
@@ -32,6 +33,10 @@ data_load_state = st.text('Loading data...')
 data = load_data()
 data_load_state.text("Done! (using st.cache_data)")
 
+st.title('SKUs emergencies')
+
+# Company and sku selection
+
 # company selection
 options_companies= [
     'eegsa',
@@ -39,8 +44,6 @@ options_companies= [
     'amesa',
     'energica',
     'all']
-
-st.title('SKUs emergencies')
 
 option_company= st.selectbox(
     "Select the company or all:",
@@ -133,106 +136,183 @@ if option_company and option_sku:
     #creating dataframe dictionary
     col_index_dict = {col: idx for idx, col in enumerate(df_final.columns)}
     npa_mrp=np.transpose(df_final.values)
-    
     int_window= npa_mrp.shape[1]
     
-    # MRP graph
-    fig_mrp, ax = plt.subplots()
+    # Define colors (contrast-friendly)
+    colors = {
+        'reorder': '#2ca02c',     # green
+        'safety': '#d62728',      # red
+        'min_stock': '#9467bd',   # purple
+        'inventory_line': '#1f77b4',  # blue
+    }
     
-    # Connecting inventory within the month
-    for j in range(int_window-1):
-        plt.plot([j,j], [npa_mrp[col_index_dict['inventory_initial_new&ra'],j], 
-                         npa_mrp[col_index_dict['inventory_final_new&ra'],j]], 
-                 marker = '', 
-                 color= 'royalblue', 
-                 linewidth= 1,
-                 linestyle='--')
+    grid_color = '#f0f0f0'
+    plotly_template = 'plotly_dark'
+    text_color = 'black'
+
+    #%% Interactive MRP plot with Plotly
     
-    # Connecting inventory across the months
-    for j in range(int_window-1):
-        plt.plot([j,j+1], [npa_mrp[col_index_dict['inventory_final_new&ra'],j],
-                           npa_mrp[col_index_dict['inventory_initial_new&ra'],j+1]], 
-                 marker = '', 
-                 color= 'royalblue',
-                 linewidth= 1,
-                 linestyle='--')
+    # ---- MRP Plot ----
+    fig_mrp = go.Figure()
+    
+    # Inventory within month
+    for j in range(int_window - 1):
+        if j == 0:
+          fig_mrp.add_trace(go.Scatter(
+              x=[j, j],
+              y=[npa_mrp[col_index_dict['inventory_initial_new&ra'], j],
+                 npa_mrp[col_index_dict['inventory_final_new&ra'], j]],
+              mode='lines',
+              line=dict(color=colors["inventory_line"], dash='dash', width=1),
+              name="Inventory Flow",  # <-- Legend label
+              showlegend=True         # <-- Show legend
+              ))
+        else:        
+             fig_mrp.add_trace(go.Scatter(
+                x=[j, j],
+                y=[npa_mrp[col_index_dict['inventory_initial_new&ra'], j],
+                   npa_mrp[col_index_dict['inventory_final_new&ra'], j]],
+                mode='lines',
+                line=dict(color=colors["inventory_line"], dash='dash', width=1),
+                showlegend=False
+            ))
+    
+    # Inventory across months
+    for j in range(int_window - 1):
+        fig_mrp.add_trace(go.Scatter(
+            x=[j, j + 1],
+            y=[npa_mrp[col_index_dict['inventory_final_new&ra'], j],
+               npa_mrp[col_index_dict['inventory_initial_new&ra'], j + 1]],
+            mode='lines',
+            line=dict(color=colors["inventory_line"], dash='dash', width=1),
+            showlegend=False
+        ))
+    
+    # RP, SS, Min stock
+    fig_mrp.add_trace(go.Scatter(
+        y=npa_mrp[col_index_dict['rp_inventory'], :],
+        x=np.arange(int_window),
+        name='Reorder Point',
+        line=dict(color=colors["reorder"], width=2)
+    ))
+    
+    fig_mrp.add_trace(go.Scatter(
+        y=npa_mrp[col_index_dict['ss_inventory'], :],
+        x=np.arange(int_window),
+        name='Safety Stock',
+        line=dict(color=colors["safety"], width=2)
+    ))
+    
+    fig_mrp.add_trace(go.Scatter(
+        y=npa_mrp[col_index_dict['demand_min_stock'], :],
+        x=np.arange(int_window),
+        name='Min Stock',
+        line=dict(color=colors["min_stock"], width=2)
+    ))
+    
+    # Layout
+    
+    fig_mrp.update_layout(
+        title=dict(text=f'MRP for {option_sku}', font=dict(color=text_color)),
+        paper_bgcolor='white',  # Full background
+        plot_bgcolor='white',   # Plot area
+        # legend=dict(
+        #     font=dict(
+        #         color='black'
+        #         )
+        #     ),
         
-    plt.plot(npa_mrp[col_index_dict['rp_inventory'],:], 
-                     label= "reorder point",
-                     color= 'limegreen',
-                     linewidth= 0.7)
-    plt.plot(npa_mrp[col_index_dict['ss_inventory'],:], 
-                     label= "safety stock",
-                     color= 'red',
-                     linewidth= 0.7)
-    plt.plot(npa_mrp[col_index_dict['demand_min_stock'],:], 
-                     label= "min_stock",
-                     color= 'magenta',
-                     linewidth= 0.7)
-    plt.xticks(np.arange(0, int_window, 1), 
-               df_final.index, 
-               fontsize= 4, 
-               rotation= 45)
-    plt.xlabel('year_month')
-    plt.ylabel('Inventory (#)')
-    plt.title(f'MP for {option_sku}')
-    plt.grid(color='lightgrey')
-    plt.legend()
-    #plt.savefig(path_mrp_graph / filename_graph)
-    #plt.show()
+        legend = dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="center",
+            x=0.5,
+            font=dict(color=text_color)
+            ),
+        xaxis=dict(
+            tickmode='array',
+            tickvals=np.arange(int_window),
+            ticktext=df_final.index.tolist(),
+            tickangle=45,
+            tickfont=dict(size=8, color=text_color),
+            title=dict(text='year_month', font=dict(color=text_color)),
+            range=[-0.5, int_window - 1 + 0.5],
+            showgrid=True,
+            gridcolor=grid_color,   # Dynamic grid color based on theme
+            gridwidth=1
+        ),
+        yaxis=dict(
+            title=dict(text='Inventory (#)', font=dict(color=text_color)),
+            tickfont=dict(size=8, color=text_color),
+            showgrid=True,
+            gridcolor=grid_color,   # Dynamic grid color based on theme
+            gridwidth=1
+        ),
+        template=plotly_template,  # Dynamic Plotly template based on theme
+        height=500,
+        margin=dict(l=60, r=40, b=80, t=60)
+    )
     
-    # Purchases graph
-    fig_purchases, ax = plt.subplots()
-    ax.bar(df_final.index, 
-           df_final['inventory_purchase'])
-    plt.xticks(np.arange(0, int_window, 1), 
-               df_final.index, 
-               fontsize= 4, 
-               rotation= 45)
-    plt.grid(color='lightgrey', axis='y')
-    plt.title(f'Purchase Amounts for {option_sku}')
-    plt.xlabel('year_month')
-    plt.ylabel('Total Purchase Amount (#)')
-    #plt.tight_layout()
+#%%
+    # ---- Purchases Plot ----
+    fig_purchases = go.Figure()
+
+    # Purchases bar plot
+    fig_purchases.add_trace(go.Bar(
+        x=df_final.index,
+        y=df_final['inventory_purchase'],
+        marker=dict(
+        color='lightblue',
+        line=dict(width=0)  # Removes the black border
+        ),
+        name="Purchases"
+    ))
+    
+    # Layout for purchases plot with dynamic theme and grid color
+    fig_purchases.update_layout(
+        title=dict(text=f'Purchase Amounts for {option_sku}', font=dict(color=text_color)),
+        paper_bgcolor='white',  # Full background
+        plot_bgcolor='white',   # Plot area
+        xaxis=dict(
+            tickangle=45,
+            tickfont=dict(size=8, color=text_color),
+            title=dict(text='year_month', font=dict(color=text_color)),
+            range=[-0.5, int_window - 1 + 0.5],
+            tickmode='array',
+            tickvals=list(range(len(df_final.index))),
+            ticktext=df_final.index.tolist(),
+            showgrid=True,
+            gridcolor=grid_color,
+            gridwidth=1,
+            #rangeslider=dict(visible=True),  # Add zoom/scroll
+            type='category'  # Ensures discrete ticks
+            ),
+        yaxis=dict(
+            title=dict(text='Total Purchase Amount (#)', font=dict(color=text_color)),
+            tickfont=dict(size=8, color=text_color),
+            showgrid=True,
+            gridcolor=grid_color,   # Dynamic grid color based on theme
+            gridwidth=1
+            ),
+        template=plotly_template,  # Dynamic Plotly template based on theme
+        height=400,
+        margin=dict(l=60, r=40, b=80, t=60)
+    )
     
     #%% website
     
-    #showing graph
+    # Display the MRP plot in Streamlit
     st.header(f'Graphical Material Planning for {option_company.upper()}')
-    st.pyplot(fig_mrp)
-    
-    # Save plot to BytesIO buffer
-    buf = io.BytesIO()
-    fig_mrp.savefig(buf, format="png", dpi=300, bbox_inches='tight')
-    buf.seek(0)
+    st.plotly_chart(fig_mrp, use_container_width=True)
     
     #date
     dt_now= datetime.now()
     dt_now= dt_now.strftime('%Y%m%d')
     
-    # Streamlit download button
-    st.download_button(
-        label="📥 Download graphical material planning (.png)",
-        data=buf,
-        file_name=f'{dt_now}_gmp_{option_company}_{option_sku}.png',
-        mime="image/png"
-    )
-    
     st.header(f'Graphical required purchases for {option_company.upper()}')
-    st.pyplot(fig_purchases)
-    
-    # Save plot to BytesIO buffer
-    buf = io.BytesIO()
-    fig_purchases.savefig(buf, format="png", dpi=300, bbox_inches='tight')
-    buf.seek(0)
-    
-    # Streamlit download button
-    st.download_button(
-        label="📥 Download graphical purchase plan (.png)",
-        data=buf,
-        file_name=f'{dt_now}_gpp_{option_company}_{option_sku}.png',
-        mime="image/png"
-    )
+    # Display the Purchases plot in Streamlit
+    st.plotly_chart(fig_purchases, use_container_width=True)
     
     #showing tabular data
     st.header(f'Tabular Material Planning per SKU for {option_company.upper()}')
@@ -240,13 +320,13 @@ if option_company and option_sku:
     
     csv_00 = convert_df(df_final)
     st.download_button(
-       "📥 Download tabular material planning (.csv)",
-       csv_00,
-       f'{dt_now}_tmp_{option_company}_{option_sku}.csv',
-       "text/csv",
-       key='download-csv-00'
+        "📥 Download tabular material planning (.csv)",
+        csv_00,
+        f'{dt_now}_tmp_{option_company}_{option_sku}.csv',
+        "text/csv",
+        key='download-csv-00'
     )
     
 else:
     st.warning("Please make selection to continue.")
-
+    
