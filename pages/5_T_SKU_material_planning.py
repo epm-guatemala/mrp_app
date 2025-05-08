@@ -33,7 +33,7 @@ data_load_state = st.text('Loading data...')
 data = load_data()
 data_load_state.text("Done! (using st.cache_data)")
 
-st.title('SKUs emergencies')
+st.title('SKU Material Planning')
 
 # Company and sku selection
 
