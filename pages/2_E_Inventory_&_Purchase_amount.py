@@ -66,6 +66,7 @@ df_pivot= pd.pivot_table(df,
                index= 'year_month',
                values= cols_new_companies,
                aggfunc= 'sum')
+
 df_pivot= (df_pivot/1000000).round(3)
 df_pivot['all']=df_pivot.sum(axis= 1)
 
