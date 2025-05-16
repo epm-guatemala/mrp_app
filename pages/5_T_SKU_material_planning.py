@@ -329,4 +329,3 @@ if option_company and option_sku:
     
 else:
     st.warning("Please make selection to continue.")
-    
