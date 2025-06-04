@@ -131,6 +131,12 @@ if option_company and option_sku:
     df_final['year_month'] = data['year_month']    
     df_final= df_final.set_index(['year_month'])
     
+    # adding expected value, standard deviation and type of lead time
+    ls_add= ['lead_time_e_months','lead_time_std_months','lead_time_type']
+    
+    for elem in ls_add:
+        df_final[elem] = data[elem]
+        
     #%% Plotting results 
     
     #creating dataframe dictionary
