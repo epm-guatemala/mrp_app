@@ -58,6 +58,7 @@ if option_company and option_sku:
     
     # subsetting dataframe only for that sku
     data= data[data['sku']==option_sku]
+    data_copy= data.copy()
     
     str_sku_description= data['sku_description'].unique()[0]
     str_sku_family= data['sku_family'].unique()[0]
@@ -132,11 +133,10 @@ if option_company and option_sku:
     df_final= df_final.set_index(['year_month'])
     
     # adding expected value, standard deviation and type of lead time
-    ls_add= ['lead_time_e_months','lead_time_std_months','lead_time_type']
-    
-    for elem in ls_add:
-        df_final[elem] = data[elem]
-        
+    df_final['lead_time_e_months'] = data_copy['lead_time_e_months'].values.round(2)
+    df_final['lead_time_std_months'] = data_copy['lead_time_std_months'].values.round(2)
+    df_final['lead_time_type'] = data_copy['lead_time_type'].values
+       
     #%% Plotting results 
     
     #creating dataframe dictionary
