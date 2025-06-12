@@ -79,7 +79,7 @@ if option:
     st.download_button(
         "📥 Download purchase plan per sku and all companies (.csv)",
         csv_00,
-        "{dt_now}_pp_all.csv",
+        f'{dt_now}_pp_all.csv',
         "text/csv",
         key='download-csv-00'
     )

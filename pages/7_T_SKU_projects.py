@@ -109,7 +109,7 @@ if option:
     st.download_button(
         "📥 Download non recurrent projects purchase plan per sku and all companies (.csv)",
         csv_00,
-        "{dt_now}_nrp_pp_sku_allc.csv",
+        f'{dt_now}_nrp_pp_sku_allc.csv',
         "text/csv",
         key='download-csv-00'
     )
@@ -121,7 +121,7 @@ if option:
     st.download_button(
         "📥 Download non recurrent projects latest version that include the SKU (.csv)",
         csv_01,
-        "{dt_now}_nrp_sku_allc.csv",
+        f'{dt_now}_nrp_sku_allc.csv',
         "text/csv",
         key='download-csv-01'
     )
@@ -133,7 +133,7 @@ if option:
     st.download_button(
         "📥 Download all non recurrent projects and SKU data (.csv)",
         csv_02,
-        "{dt_now}_nrp_sku_allc_detail.csv",
+        f'{dt_now}_nrp_sku_allc_detail.csv',
         "text/csv",
         key='download-csv-02'
     )
