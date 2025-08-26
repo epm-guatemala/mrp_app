@@ -8,10 +8,10 @@ from datetime import datetime
 
 @st.cache_data
 def load_data():
-    # Create a connection object.
-    from streamlit_gsheets import GSheetsConnection
-    conn = st.connection("mrp", type=GSheetsConnection)
-    df = conn.read()
+    # Initialize connection.
+    conn = st.connection("postgresql", type="sql")
+    # Perform query.
+    df = conn.query('SELECT * FROM "202508_mp";', ttl="10m")
     return df
 
 @st.cache_data

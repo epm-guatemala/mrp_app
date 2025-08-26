@@ -1,3 +1,5 @@
 git+https://github.com/streamlit/gsheets-connection
 matplotlib
 plotly
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.34
