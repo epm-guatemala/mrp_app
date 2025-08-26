@@ -40,6 +40,8 @@ df_mm_c= df_mm.copy()
 
 # cleaning data
 df_mm_clean= df_mm[((df_mm['mrp']=='si') | (df_mm['mto']=='si') | (df_mm['min_stock']=='si')) & (df_mm['obsoleto']=='no')]
+df_mm_dw= df_mm_clean.copy()
+
 df_mm_clean= df_mm_clean.drop_duplicates(subset= ['sap_codigo', 'sociedad'])
 
 # all skus per company
@@ -89,7 +91,7 @@ dt_now= datetime.now()
 dt_now= dt_now.strftime('%Y%m%d')
 
 st.header("Material Master Download - ⚠️ does not contain OBSOLETE SKUs")
-csv_00 = convert_df(df_mm)
+csv_00 = convert_df(df_mm_dw)
 st.download_button(
    "📥 Download EPM GUA Material Master (.csv)",
    csv_00,
