@@ -11,7 +11,7 @@ import pandas as pd
 #%% Functions
 
 @st.cache_data
-def load_data_mrp():
+def load_data_mp():
     # Initialize connection.
     conn = st.connection("postgresql", type="sql")
     # Perform query.
@@ -28,7 +28,7 @@ def convert_df(df):
 #%% Downloading dataframe
 
 data_load_state = st.text('Loading data...')
-data = load_data_mrp()
+data = load_data_mp()
 data_load_state.text("Done! (using st.cache_data)")
 
 #%% Inventory simulation
