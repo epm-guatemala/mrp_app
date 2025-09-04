@@ -15,7 +15,7 @@ def load_data_mp():
     # Initialize connection.
     conn = st.connection("postgresql", type="sql")
     # Perform query.
-    df = conn.query('SELECT * FROM "202508_mp";', ttl="10m")
+    df = conn.query('SELECT * FROM clean_mp;', ttl="10m")
     return df
 
 @st.cache_data
