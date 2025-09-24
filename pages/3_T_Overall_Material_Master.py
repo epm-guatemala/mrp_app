@@ -13,10 +13,10 @@ import numpy as np
 
 @st.cache_data
 def load_data_mm():
-    # Create a connection object.
-    from streamlit_gsheets import GSheetsConnection
-    conn = st.connection("mm", type=GSheetsConnection)
-    df = conn.read()
+    # Initialize connection.
+    conn = st.connection("postgresql", type="sql")
+    # Perform query
+    df = conn.query('SELECT * FROM raw_master_data', ttl="10m")
     return df
 
 @st.cache_data

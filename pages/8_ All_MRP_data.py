@@ -7,11 +7,21 @@ from datetime import datetime
 #%% functions
 
 @st.cache_data
-def load_data():
+def load_versions_mp():
     # Initialize connection.
     conn = st.connection("postgresql", type="sql")
-    # Perform query.
-    df = conn.query('SELECT * FROM clean_mp;', ttl="10m")
+    # Perform query
+    df = conn.query('SELECT DISTINCT(version) AS version FROM clean_mp ORDER BY version DESC', ttl="10m")
+    return df
+
+@st.cache_data
+def load_data_mp(version_list):
+    # Initialize connection.
+    conn = st.connection("postgresql", type="sql")
+    # Build query with placeholders
+    query = "SELECT * FROM clean_mp WHERE version = ANY(:versions)"
+    # Run query safely
+    df = conn.query(query, params={"versions": version_list}, ttl="10m")
     return df
 
 @st.cache_data
@@ -21,10 +31,24 @@ def convert_df(df):
     df.to_csv(output, index=False, encoding='utf-8-sig')  # <-- BOM added here
     return output.getvalue()
 
-#%% Loading
+#%% Version selection
+
+st.title('MP version')
 
 data_load_state = st.text('Loading data...')
-data = load_data()
+df_versions = load_versions_mp()
+data_load_state.text("Done! (using st.cache_data)")
+
+option = st.selectbox(
+    "Select the year-week MP version you are interested in:",
+    list(df_versions['version'])
+    )
+st.write("You selected:", option)
+
+#%% Loading data
+
+data_load_state = st.text('Loading MP...')
+data = load_data_mp([option])
 data_load_state.text("Done! (using st.cache_data)")
 
 #%% website
@@ -44,5 +68,6 @@ st.download_button(
     key='download-csv-00'
 )
 
-#%%
+#%% 
+
 
