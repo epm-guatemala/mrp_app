@@ -11,7 +11,7 @@ def load_versions_mp():
     # Initialize connection.
     conn = st.connection("postgresql", type="sql")
     # Perform query
-    df = conn.query('SELECT DISTINCT(version) AS version FROM clean_mp ORDER BY version DESC', ttl="10m")
+    df = conn.query('SELECT DISTINCT(version) AS version FROM clean_real_mp ORDER BY version DESC', ttl="10m")
     return df
 
 @st.cache_data

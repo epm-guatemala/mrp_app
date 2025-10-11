@@ -5,7 +5,6 @@ from datetime import datetime
 import io
 
 import pandas as pd
-import numpy as np
 
 #%% Functions
 
@@ -98,6 +97,10 @@ data_load_state.text("Done! (using st.cache_data)")
 df_mm_clean= df_mm[((df_mm['mrp']=='si') | (df_mm['mto']=='si') | (df_mm['min_stock']=='si')) & (df_mm['obsoleto']=='no')]
 df_mm_clean= df_mm_clean.drop_duplicates(subset= ['sap_codigo', 'sociedad'])
 
+# sku dictionry
+dict_sku_description= dict(zip(df_mm['sap_codigo'], df_mm['sap_descripcion']))
+dict_sku_family= dict(zip(df_mm['sap_codigo'], df_mm['familia_01']))
+
 # all skus per company
 df_sku_sociedad= pd.pivot_table(df_mm_clean,
                index= 'sociedad',
@@ -105,149 +108,164 @@ df_sku_sociedad= pd.pivot_table(df_mm_clean,
                aggfunc= 'count')
 df_sku_sociedad.index = df_sku_sociedad.index.str.lower()
 df_sku_sociedad.columns= ['total_skus']
-            
-#%% Creating dataframe
+
+#%% dictionaries for state summarization
+
+dict_variations ={
+    (1,1,1):'stockouts',
+    (1,0,1):'stockouts',
+    (1,1,0):'stockouts',
+    (0,1,1):'emergency',
+    (1,0,0):'stockouts',
+    (0,1,0):'near miss',
+    (0,0,1):'emergency',
+    (0,0,0):'no emergency'
+    }
+
+dict_all_variations ={
+    (1,1,1):'stockouts',
+    (1,0,1):'stockouts',
+    (1,1,0):'emergency',
+    (0,1,1):'stockouts',
+    (1,0,0):'emergency',
+    (0,1,0):'no emergency',
+    (0,0,1):'stockouts',
+    (0,0,0):'no emergency'
+    }
+
+#%% Overall state per company
+
+ls_state_frames= []
+ls_companies= ['eegsa', 'trelec', 'amesa', 'energica']
+
+for str_company in ls_companies:
+
+    # Unique SKU overall
+    pS_total_stockout= data[f'stockout_count_{str_company}']
+    pS_total_near_miss= data[f'nearmiss_count_{str_company}']
+    pS_total_emergency= data[f'emergency_count_{str_company}']
+
+    df_sku_summary= pd.DataFrame({
+        'company': f'{str_company}',
+        'stockouts': pS_total_stockout,
+        'near miss': pS_total_stockout,
+        'emergency': pS_total_emergency
+        })
+
+    ls_state_frames.append(df_sku_summary)
+    
+
+df_companies_state= pd.concat(ls_state_frames, axis= 0)
+df_companies_state= df_companies_state.reset_index(drop=False).set_index(['sku','company'])
+
+df_companies_state= (df_companies_state/df_companies_state).fillna(0)
+
+ls_overall_final_state = []
+for elem1, elem2, elem3 in zip(df_companies_state['stockouts'],
+                               df_companies_state['near miss'],
+                               df_companies_state['emergency']):
+    ls_overall_final_state.append(dict_variations[(elem1, elem2, elem3)])
+
+df_companies_state['final_state']= ls_overall_final_state
+df_companies_state= df_companies_state.reset_index(drop= False)
+
+df_companies_state['sku_description']= df_companies_state['sku'].map(dict_sku_description)
+df_companies_state['sku_family']= df_companies_state['sku'].map(dict_sku_family)
+
+df_companies_state= df_companies_state[['sku', 'sku_description', 'sku_family', 'company', 
+                    'stockouts', 'near miss', 'emergency','final_state']]
+
+df_summary= pd.pivot_table(df_companies_state, 
+               index= 'company',
+               columns= 'final_state',
+               values= 'sku',
+               aggfunc= 'count'
+               )
+
+df_summary= df_summary[['stockouts','emergency']]
+df_summary= df_summary.sort_values('stockouts', ascending=False)
 
 
-# Unique SKU overall
-pS_total_stockout= data['stockout_count_eegsa']+data['stockout_count_trelec']+data['stockout_count_amesa']+data['stockout_count_energica']
-pS_total_near_miss= data['nearmiss_count_eegsa']+data['nearmiss_count_trelec']+data['nearmiss_count_amesa']+data['nearmiss_count_energica']
-pS_total_emergency= data['emergency_count_eegsa']+data['emergency_count_trelec']+data['emergency_count_amesa']+data['emergency_count_energica']
+df_summary['total']= df_summary.sum(axis=1)
+df_summary= df_summary[['stockouts','emergency','total']]
 
-df_sku_summary= pd.concat([pS_total_stockout, pS_total_near_miss, pS_total_emergency], axis= 1)
-df_sku_summary.columns= ['stockout','nearmiss','emergency']
-df_sku_summary= df_sku_summary/df_sku_summary
+#%% Overall state for all companies
 
-df_sku_summary['stockout']= np.where(df_sku_summary['stockout']>0, 'stockout','')
-df_sku_summary['nearmiss']= np.where(df_sku_summary['nearmiss']>0, 'nearmiss','')
-df_sku_summary['emergency']= np.where(df_sku_summary['emergency']>0, 'emergency','')
-df_sku_summary['family']= df_sku_summary['stockout']+df_sku_summary['nearmiss']+df_sku_summary['emergency']
+df_all_summary = pd.pivot_table(df_companies_state,
+               columns= 'final_state',
+               index= 'sku',
+               values= 'company', 
+               aggfunc='count')
 
+df_companies_state['final_state'].unique()
 
+df_all_summary= (df_all_summary/df_all_summary).fillna(0)
 
-               
-               
+ls_overall_final_state = []
+for elem1, elem2, elem3 in zip(df_all_summary['emergency'],
+                               df_all_summary['no emergency'],
+                               df_all_summary['stockouts']):
+    ls_overall_final_state.append(dict_all_variations[(elem1, elem2, elem3)])
 
+df_all_summary['final_state']= ls_overall_final_state
+df_all_summary= df_all_summary.reset_index(drop=False)
+df_all_summary['sku_description']= df_all_summary['sku'].map(dict_sku_description)
+df_all_summary['sku_family']= df_all_summary['sku'].map(dict_sku_family)
 
+df_all_summary= df_all_summary[['sku', 
+                                'sku_description',
+                                'sku_family',
+                                'emergency', 
+                                'no emergency', 
+                                'stockouts', 
+                                'final_state']]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-df_pt_data= pd.DataFrame((data/data).sum(axis= 0))
-
-df_titles= pd.DataFrame([str_title.split("_") for str_title in df_pt_data.index])
-df_titles.columns= ['state', 'repeated', 'company']
-df_titles['count']= df_pt_data.values
-
-
-df_results= pd.pivot_table(df_titles, index='company', columns= 'state', 
-         values='count', aggfunc= "sum")
-
-df_results= df_results[['stockout','nearmiss','emergency','noemergency']]
-df_results.loc['total']= df_results.sum(axis=0)
-        
-
-
-
-
-
-
-
-
-
-cols_analysis = ['eegsa', 'trelec', 'amesa', 'energica']
-df_results= pd.DataFrame(np.array(ls_sku_all_emerg))
-df_results.columns = cols_analysis
-df_results['sku']= ls_sku
-df_results['sku_description']= df_results['sku'].map(dict_sku_description)
-df_results['sku_family']= df_results['sku'].map(dict_sku_family)
-
-df_melted= pd.melt(df_results, 
-                   id_vars=['sku', 'sku_description', 'sku_family'], 
-                   value_vars=cols_analysis)
-
-df_pivot= pd.pivot_table(df_melted,
-               index= 'variable',
-               columns= 'value',
+df_meta= pd.pivot_table(df_all_summary,
+               index= 'sku_family',
+               columns= 'final_state',
                values= 'sku',
                aggfunc= 'count')
 
-df_pivot= df_pivot['emergency'].sort_values(ascending=False)
-df_pivot= pd.DataFrame(df_pivot)
-df_pivot.columns= ['emergency_skus'] 
+df_meta= df_meta.sort_values('stockouts', ascending=False)
+df_meta.loc['total']= df_meta.sum(axis=0)
+df_meta= df_meta[['stockouts','emergency','no emergency']]
 
-df_pivot= pd.concat([df_pivot, 
-                     df_sku_sociedad], axis = 1)
+df_meta_summary= df_meta.loc['total']
 
-df_pivot.loc['total'] = df_pivot.sum()
-df_pivot['emergency_proportion']=(df_pivot['emergency_skus']/df_pivot['total_skus']).round(2)
+#%% Website
 
-#%% emergencies per unique sku
-
-df_melted_sku_unique= pd.pivot_table(
-    df_melted,
-    index= 'sku',
-    columns= 'value',
-    values= 'variable',
-    aggfunc= 'count'
-    )
-
-df_melted_sku_unique= df_melted_sku_unique[['emergency']]
-df_melted_sku_unique= df_melted_sku_unique.dropna()
-df_melted_sku_unique= df_melted_sku_unique.reset_index(drop= False)
-
-df_melted_sku_unique['sku_description']= df_melted_sku_unique['sku'].map(dict_sku_description)
-df_melted_sku_unique['sku_family']= df_melted_sku_unique['sku'].map(dict_sku_family)
-df_melted_sku_unique= df_melted_sku_unique[['sku_family','sku', 'sku_description', 'emergency']]
-
-df_melted_sku_unique= df_melted_sku_unique.sort_values('sku_family').reset_index(drop=True)
-df_melted_sku_unique.index = range(1, df_melted_sku_unique.shape[0]+1)
-
-
-#%% website
-
-st.title('SKUs emergencies')
-st.write('At a minimum, one delivery is required and the known lead time exceeds \
-         the time remaining until the required delivery date.')
-
-st.header("SKUs in emergency state per company")
-st.dataframe(df_pivot)
+st.title('SKUs alerts for EPM GTM')
+st.header("SKUs")
+st.dataframe(df_meta_summary)
+st.header("SKU family")
+st.dataframe(df_meta)
 
 dt_now= datetime.now()
 dt_now= dt_now.strftime('%Y%m%d')
 
-csv_00 = convert_df(df_melted)
+csv_00 = convert_df(df_all_summary)
 st.download_button(
-   "📥 Download companies SKUs emergencies as (.csv)",
+   "📥 Download SKUs alerts as (.csv)",
    csv_00,
-   f'{dt_now}_skus_company_emergencies.csv',
+   f'{dt_now}_skus_alerts.csv',
    "text/csv",
    key='download-csv-00'
 )
 
-st.header("SKUs in emergency state")
-int_rows= df_melted_sku_unique.shape[0]
-st.write(f'Unique SKUs in emergency state: {int_rows}')
-st.dataframe(df_melted_sku_unique)
+st.header('Companies SKUs')
+st.write('stockouts: at some point stocks will got to zero, ')
 
-csv_01 = convert_df(df_melted_sku_unique)
+st.header("SKUs alerts per company")
+st.dataframe(df_summary)
+
+dt_now= datetime.now()
+dt_now= dt_now.strftime('%Y%m%d')
+
+csv_01 = convert_df(df_companies_state)
 st.download_button(
-   "📥 Download SKU emergencies as (.csv)",
+   "📥 Download companies SKUs alerts as (.csv)",
    csv_01,
-   f'{dt_now}_sku_emergencies.csv',
+   f'{dt_now}_skus_company_emergencies.csv',
    "text/csv",
    key='download-csv-01'
 )
-
-
