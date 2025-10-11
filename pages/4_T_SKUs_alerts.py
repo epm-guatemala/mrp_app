@@ -22,15 +22,42 @@ def load_versions_mp():
     # Initialize connection.
     conn = st.connection("postgresql", type="sql")
     # Perform query
-    df = conn.query('SELECT DISTINCT(version) AS version FROM clean_mp ORDER BY version DESC', ttl="10m")
+    df = conn.query('SELECT DISTINCT(version) AS version FROM clean_real_mp ORDER BY version DESC', ttl="10m")
     return df
 
 @st.cache_data
-def load_data_mp(version_list):
+def load_alerts(version_list):
     # Initialize connection.
     conn = st.connection("postgresql", type="sql")
     # Build query with placeholders
-    query = "SELECT * FROM clean_mp WHERE version = ANY(:versions)"
+    query = """
+        SELECT
+        sku,
+        -- eegsa --
+        COUNT(*) FILTER (WHERE purchase_type_eegsa = 'no emergency') AS noemergency_count_eegsa,
+        COUNT(*) FILTER (WHERE purchase_type_eegsa = 'emergency') AS emergency_count_eegsa,
+        COUNT(*) FILTER (WHERE purchase_type_eegsa = 'near miss') AS nearmiss_count_eegsa,
+        COUNT(*) FILTER (WHERE purchase_type_eegsa = 'stock out') AS stockout_count_eegsa,
+        -- trelec --
+        COUNT(*) FILTER (WHERE purchase_type_trelec = 'no emergency') AS noemergency_count_trelec,
+        COUNT(*) FILTER (WHERE purchase_type_trelec = 'emergency') AS emergency_count_trelec,
+        COUNT(*) FILTER (WHERE purchase_type_trelec = 'near miss') AS nearmiss_count_trelec,
+        COUNT(*) FILTER (WHERE purchase_type_trelec = 'stock out') AS stockout_count_trelec,
+        -- amesa --
+    	COUNT(*) FILTER (WHERE purchase_type_amesa = 'no emergency') AS noemergency_count_amesa,
+        COUNT(*) FILTER (WHERE purchase_type_amesa = 'emergency') AS emergency_count_amesa,
+        COUNT(*) FILTER (WHERE purchase_type_amesa = 'near miss') AS nearmiss_count_amesa,
+        COUNT(*) FILTER (WHERE purchase_type_amesa = 'stock out') AS stockout_count_amesa,
+        -- energica --
+        COUNT(*) FILTER (WHERE purchase_type_energica = 'no emergency') AS noemergency_count_energica,
+        COUNT(*) FILTER (WHERE purchase_type_energica = 'emergency') AS emergency_count_energica,
+        COUNT(*) FILTER (WHERE purchase_type_energica = 'near miss') AS nearmiss_count_energica,
+        COUNT(*) FILTER (WHERE purchase_type_energica = 'stock out') AS stockout_count_energica
+        FROM clean_real_mp
+        where version =ANY(:versions)
+        GROUP BY sku
+        ORDER BY sku;"""    
+        
     # Run query safely
     df = conn.query(query, params={"versions": version_list}, ttl="10m")
     return df
@@ -60,7 +87,9 @@ st.write("You selected:", option)
 
 # loading MP
 data_load_state = st.text('Loading MP and material master data...')
-data = load_data_mp([option])
+data = load_alerts([option]).set_index('sku', drop= True)
+
+# loading master data
 df_mm= load_data_mm()
 data_load_state.text("Done! (using st.cache_data)")
 
@@ -76,53 +105,67 @@ df_sku_sociedad= pd.pivot_table(df_mm_clean,
                aggfunc= 'count')
 df_sku_sociedad.index = df_sku_sociedad.index.str.lower()
 df_sku_sociedad.columns= ['total_skus']
-
-#%% Cleaning mrp
-
-cols = [
-        'sku_family',
-        'sku',
-        'sku_description',
-        'year_month',
-        'purchase_type_eegsa',
-        'purchase_type_trelec',
-        'purchase_type_amesa',
-        'purchase_type_energica',
-        ]
-
-cols_analysis = [
-    'purchase_type_eegsa',
-    'purchase_type_trelec',
-    'purchase_type_amesa',
-    'purchase_type_energica'
-    ]
-
-df = data[cols]
-
-dict_sku_description= dict(zip(df['sku'], df['sku_description']))
-dict_sku_family= dict(zip(df['sku'], df['sku_family']))
-
-# emergencies per sku x company
-
-ls_sku= []
-ls_sku_all_emerg= []
-
-for str_sku in df['sku'].unique():
-    
-    df_elem= df[df['sku']==str_sku]
-    
-    ls_sku_emer= []
-    
-    for col in cols_analysis:
-        if 'emergency' in df_elem[col].unique():
-            ls_sku_emer.append('emergency')
-        else:
-            ls_sku_emer.append('no emergency')
             
-    ls_sku.append(str_sku)
-    ls_sku_all_emerg.append(ls_sku_emer)
-            
-# Creating dataframe
+#%% Creating dataframe
+
+
+# Unique SKU overall
+pS_total_stockout= data['stockout_count_eegsa']+data['stockout_count_trelec']+data['stockout_count_amesa']+data['stockout_count_energica']
+pS_total_near_miss= data['nearmiss_count_eegsa']+data['nearmiss_count_trelec']+data['nearmiss_count_amesa']+data['nearmiss_count_energica']
+pS_total_emergency= data['emergency_count_eegsa']+data['emergency_count_trelec']+data['emergency_count_amesa']+data['emergency_count_energica']
+
+df_sku_summary= pd.concat([pS_total_stockout, pS_total_near_miss, pS_total_emergency], axis= 1)
+df_sku_summary.columns= ['stockout','nearmiss','emergency']
+df_sku_summary= df_sku_summary/df_sku_summary
+
+df_sku_summary['stockout']= np.where(df_sku_summary['stockout']>0, 'stockout','')
+df_sku_summary['nearmiss']= np.where(df_sku_summary['nearmiss']>0, 'nearmiss','')
+df_sku_summary['emergency']= np.where(df_sku_summary['emergency']>0, 'emergency','')
+df_sku_summary['family']= df_sku_summary['stockout']+df_sku_summary['nearmiss']+df_sku_summary['emergency']
+
+
+
+               
+               
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+df_pt_data= pd.DataFrame((data/data).sum(axis= 0))
+
+df_titles= pd.DataFrame([str_title.split("_") for str_title in df_pt_data.index])
+df_titles.columns= ['state', 'repeated', 'company']
+df_titles['count']= df_pt_data.values
+
+
+df_results= pd.pivot_table(df_titles, index='company', columns= 'state', 
+         values='count', aggfunc= "sum")
+
+df_results= df_results[['stockout','nearmiss','emergency','noemergency']]
+df_results.loc['total']= df_results.sum(axis=0)
+        
+
+
+
+
+
+
+
+
+
 cols_analysis = ['eegsa', 'trelec', 'amesa', 'energica']
 df_results= pd.DataFrame(np.array(ls_sku_all_emerg))
 df_results.columns = cols_analysis
