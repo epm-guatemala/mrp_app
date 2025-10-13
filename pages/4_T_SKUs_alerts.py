@@ -235,9 +235,9 @@ df_meta_summary= df_meta.loc['total']
 #%% Website
 
 st.title('SKUs alerts for EPM GTM')
-st.header("SKUs")
+st.header("SKUs alerts")
 st.dataframe(df_meta_summary)
-st.header("SKU family")
+st.header("SKU alerts per SKU-family")
 st.dataframe(df_meta)
 
 dt_now= datetime.now()
@@ -252,8 +252,8 @@ st.download_button(
    key='download-csv-00'
 )
 
-st.header('Companies SKUs')
-st.write('stockouts: at some point stocks will got to zero, ')
+st.header('SKUs per company and their alerts')
+st.write('Stockouts, Near-misses, Emergencies per company and per SKU')
 
 st.header("SKUs alerts per company")
 st.dataframe(df_summary)
