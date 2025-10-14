@@ -23,7 +23,7 @@ def load_data_mp(version_list):
     # Initialize connection.
     conn = st.connection("postgresql", type="sql")
     # Build query with placeholders
-    query = "SELECT * FROM clean_mp WHERE version = ANY(:versions)"
+    query = "SELECT * FROM clean_real_mp WHERE version = ANY(:versions)"
     # Run query safely
     df = conn.query(query, params={"versions": version_list}, ttl="10m")
     return df

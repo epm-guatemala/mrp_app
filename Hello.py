@@ -73,7 +73,6 @@ st.markdown(
     - Monthly inventory (quantities and amount-GTQ)
     
 """
-)
-                                                                          
+)                                                                       
                                                                           
 
