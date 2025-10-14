@@ -68,6 +68,21 @@ def convert_df(df):
     df.to_csv(output, index=False, encoding='utf-8-sig')  # <-- BOM added here
     return output.getvalue()
 
+#%% dictionaries for state summarization
+
+# (stockouts, near miss, emergency) if (0,0,0) = no emergency
+
+dict_variations ={
+    (1,1,1):'stockouts',
+    (1,0,1):'stockouts',
+    (1,1,0):'stockouts',
+    (0,1,1):'emergency',
+    (1,0,0):'stockouts',
+    (0,1,0):'near miss',
+    (0,0,1):'emergency',
+    (0,0,0):'no emergency'
+    }
+
 #%% Version selection
 
 st.title('MP version')
@@ -109,30 +124,6 @@ df_sku_sociedad= pd.pivot_table(df_mm_clean,
 df_sku_sociedad.index = df_sku_sociedad.index.str.lower()
 df_sku_sociedad.columns= ['total_skus']
 
-#%% dictionaries for state summarization
-
-dict_variations ={
-    (1,1,1):'stockouts',
-    (1,0,1):'stockouts',
-    (1,1,0):'stockouts',
-    (0,1,1):'emergency',
-    (1,0,0):'stockouts',
-    (0,1,0):'near miss',
-    (0,0,1):'emergency',
-    (0,0,0):'no emergency'
-    }
-
-dict_all_variations ={
-    (1,1,1):'stockouts',
-    (1,0,1):'stockouts',
-    (1,1,0):'emergency',
-    (0,1,1):'stockouts',
-    (1,0,0):'emergency',
-    (0,1,0):'no emergency',
-    (0,0,1):'stockouts',
-    (0,0,0):'no emergency'
-    }
-
 #%% Overall state per company
 
 ls_state_frames= []
@@ -148,17 +139,16 @@ for str_company in ls_companies:
     df_sku_summary= pd.DataFrame({
         'company': f'{str_company}',
         'stockouts': pS_total_stockout,
-        'near miss': pS_total_stockout,
+        'near miss': pS_total_near_miss,
         'emergency': pS_total_emergency
         })
 
     ls_state_frames.append(df_sku_summary)
-    
-
 df_companies_state= pd.concat(ls_state_frames, axis= 0)
 df_companies_state= df_companies_state.reset_index(drop=False).set_index(['sku','company'])
 
 df_companies_state= (df_companies_state/df_companies_state).fillna(0)
+
 
 ls_overall_final_state = []
 for elem1, elem2, elem3 in zip(df_companies_state['stockouts'],
@@ -169,25 +159,39 @@ for elem1, elem2, elem3 in zip(df_companies_state['stockouts'],
 df_companies_state['final_state']= ls_overall_final_state
 df_companies_state= df_companies_state.reset_index(drop= False)
 
+# Adding SKU description and family
 df_companies_state['sku_description']= df_companies_state['sku'].map(dict_sku_description)
 df_companies_state['sku_family']= df_companies_state['sku'].map(dict_sku_family)
 
-df_companies_state= df_companies_state[['sku', 'sku_description', 'sku_family', 'company', 
-                    'stockouts', 'near miss', 'emergency','final_state']]
+df_companies_state= df_companies_state[['sku',
+                                        'sku_description',
+                                        'sku_family',
+                                        'company',
+                                        'stockouts',
+                                        'near miss',
+                                        'emergency',
+                                        'final_state']]
 
-df_summary= pd.pivot_table(df_companies_state, 
+df_summary= pd.pivot_table(df_companies_state,
                index= 'company',
                columns= 'final_state',
                values= 'sku',
                aggfunc= 'count'
                )
 
-df_summary= df_summary[['stockouts','emergency']]
-df_summary= df_summary.sort_values('stockouts', ascending=False)
+ls_desired_columns= ['stockouts','near miss','emergency']
+df_summary= df_summary[ls_desired_columns]
 
-
+#Adding totals
 df_summary['total']= df_summary.sum(axis=1)
-df_summary= df_summary[['stockouts','emergency','total']]
+
+# Appending total SKUs from Material Master
+df_summary= pd.concat([df_summary, df_sku_sociedad], axis=1)
+
+for elem in ['stockouts', 'near miss', 'emergency']:
+    df_summary[elem+'_proportion']= (df_summary[elem]/df_summary['total_skus']).apply(lambda x: round(x, 3))
+    
+df_summary= df_summary.sort_values('stockouts_proportion', ascending=False)
 
 #%% Overall state for all companies
 
@@ -197,27 +201,26 @@ df_all_summary = pd.pivot_table(df_companies_state,
                values= 'company', 
                aggfunc='count')
 
-df_companies_state['final_state'].unique()
-
 df_all_summary= (df_all_summary/df_all_summary).fillna(0)
 
 ls_overall_final_state = []
-for elem1, elem2, elem3 in zip(df_all_summary['emergency'],
-                               df_all_summary['no emergency'],
-                               df_all_summary['stockouts']):
-    ls_overall_final_state.append(dict_all_variations[(elem1, elem2, elem3)])
+for elem1, elem2, elem3 in zip(df_all_summary['stockouts'],
+                               df_all_summary['near miss'],
+                               df_all_summary['emergency']):
+    ls_overall_final_state.append(dict_variations[(elem1, elem2, elem3)])
 
 df_all_summary['final_state']= ls_overall_final_state
 df_all_summary= df_all_summary.reset_index(drop=False)
+#Adding SKU description and family
 df_all_summary['sku_description']= df_all_summary['sku'].map(dict_sku_description)
 df_all_summary['sku_family']= df_all_summary['sku'].map(dict_sku_family)
 
 df_all_summary= df_all_summary[['sku', 
                                 'sku_description',
                                 'sku_family',
-                                'emergency', 
-                                'no emergency', 
-                                'stockouts', 
+                                'stockouts',
+                                'near miss',
+                                'emergency',
                                 'final_state']]
 
 df_meta= pd.pivot_table(df_all_summary,
@@ -227,10 +230,12 @@ df_meta= pd.pivot_table(df_all_summary,
                aggfunc= 'count')
 
 df_meta= df_meta.sort_values('stockouts', ascending=False)
+df_meta= df_meta[['stockouts','near miss','emergency']]
 df_meta.loc['total']= df_meta.sum(axis=0)
-df_meta= df_meta[['stockouts','emergency','no emergency']]
 
-df_meta_summary= df_meta.loc['total']
+df_meta_summary= pd.DataFrame(df_meta.loc['total'])
+df_meta_summary['total_proportion']= (df_meta_summary/df_mm_clean['sap_codigo'].unique().shape[0]).apply(lambda x: round(x, 3))
+df_meta_summary.loc['total']= df_meta_summary.sum(axis=0)
 
 #%% Website
 
