@@ -148,14 +148,17 @@ if str_selection:
                                   aggfunc= 'sum')
     
     if 'real' in pt_df_project.columns and 'plan' in pt_df_project.columns:
+        pt_df_project= pt_df_project.fillna(0)
         pt_df_project['planvsreal']=pt_df_project['plan']+pt_df_project['real']
         
     elif 'plan' not in pt_df_project.columns:
         pt_df_project['plan']=0
+        pt_df_project= pt_df_project.fillna(0)
         pt_df_project['planvsreal']=pt_df_project['plan']+pt_df_project['real']
     
     elif 'real' not in pt_df_project.columns:
         pt_df_project['real']=0
+        pt_df_project= pt_df_project.fillna(0)
         pt_df_project['planvsreal']=pt_df_project['plan']+pt_df_project['real']
     
     else:
@@ -207,14 +210,17 @@ if str_sku_description:
                                   aggfunc= 'sum')
     
     if 'real' in pt_df_sku.columns and 'plan' in pt_df_sku.columns:
+        pt_df_sku= pt_df_sku.fillna(0)
         pt_df_sku['planvsreal']=pt_df_sku['plan']+pt_df_sku['real']
     
     elif 'real' not in pt_df_sku.columns:
         pt_df_sku['real']=0
+        pt_df_sku= pt_df_sku.fillna(0)
         pt_df_sku['planvsreal']=pt_df_sku['plan']+pt_df_sku['real']
         
     elif 'plan' not in pt_df_sku.columns:
         pt_df_sku['plan']=0
+        pt_df_sku= pt_df_sku.fillna(0)
         pt_df_sku['planvsreal']=pt_df_sku['plan']+pt_df_sku['real']
     else:
         st.warning("Error!")
