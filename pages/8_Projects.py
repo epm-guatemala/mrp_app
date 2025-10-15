@@ -147,12 +147,19 @@ if str_selection:
                                   values= 'qty',
                                   aggfunc= 'sum')
     
-    if 'real' in pt_df_project.columns:
+    if 'real' in pt_df_project.columns and 'plan' in pt_df_project.columns:
         pt_df_project['planvsreal']=pt_df_project['plan']+pt_df_project['real']
         
-    else:
-        pt_df_project['real']=0
+    elif 'plan' not in pt_df_project.columns:
+        pt_df_project['plan']=np.nan
         pt_df_project['planvsreal']=pt_df_project['plan']+pt_df_project['real']
+    
+    elif 'real' not in pt_df_project.columns:
+        pt_df_project['real']=np.nan
+        pt_df_project['planvsreal']=pt_df_project['plan']+pt_df_project['real']
+    
+    else:
+        st.warning("Error!")
         
     pt_df_project= pt_df_project.sort_index(ascending=True)
     
@@ -199,12 +206,18 @@ if str_sku_description:
                                   values= 'qty',
                                   aggfunc= 'sum')
     
-    if 'real' in pt_df_sku.columns:
+    if 'real' in pt_df_sku.columns and 'plan' in pt_df_sku.columns:
+        pt_df_sku['planvsreal']=pt_df_sku['plan']+pt_df_sku['real']
+    
+    elif 'real' not in pt_df_sku.columns:
+        pt_df_sku['real']=np.nan
         pt_df_sku['planvsreal']=pt_df_sku['plan']+pt_df_sku['real']
         
-    else:
-        pt_df_sku['real']=0
+    elif 'plan' not in pt_df_sku.columns:
+        pt_df_sku['plan']=np.nan
         pt_df_sku['planvsreal']=pt_df_sku['plan']+pt_df_sku['real']
+    else:
+        st.warning("Error!")
         
     pt_df_sku= pt_df_sku.sort_values('project_version',ascending=True)
     
