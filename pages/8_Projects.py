@@ -133,7 +133,7 @@ st.write('⚠️ Only non-recurrent projects with a defined timeline are shown t
 str_selection= st.selectbox(
     "Select project version ~ project description:",
     [""]+list((df['project_version']+'~'+df['project_description']).unique()))
-         
+
 if str_selection:
     
     str_project_id= str_selection.split("~")[0]
