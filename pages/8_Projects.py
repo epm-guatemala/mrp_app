@@ -30,7 +30,7 @@ def load_data_projects_consumption():
     # Initialize connection.
     conn = st.connection("postgresql", type="sql")
     # Perform query
-    df = conn.query('SELECT * FROM clean_company_projects_consumption', ttl="10m")
+    df = conn.query('SELECT * FROM clean_company_projects_consumption WHERE qty < 0', ttl="10m")
     return df
 
 @st.cache_data
