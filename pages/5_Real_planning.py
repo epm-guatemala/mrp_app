@@ -156,7 +156,7 @@ if option_company and option_sku:
             pass
         
     df_final['year_month'] = data['year_month']    
-    df_final= df_final.set_index(['year_month'])
+    df_final= df_final.set_index(['year_month']).sort_index(ascending=True)
     
     # adding expected value, standard deviation and type of lead time
     df_final['lead_time_e_months'] = data_copy['lead_time_e_months'].values.round(2)
