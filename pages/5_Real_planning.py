@@ -348,7 +348,13 @@ if option_company and option_sku:
     
     #showing tabular data
     st.header(f'Tabular Material Planning per SKU for {option_company.upper()}')
-    st.dataframe(df_final.T)
+    #st.dataframe(df_final.T)    
+    st.dataframe(
+    df_final.T.style.format(
+        lambda x: f"{x:,.2f}" if isinstance(x, (int, float, np.number)) and pd.notna(x) else x
+    ),
+    use_container_width=True,
+    )
     
     csv_00 = convert_df(df_final)
     st.download_button(
