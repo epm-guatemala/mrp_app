@@ -2,4 +2,5 @@ matplotlib
 plotly
 psycopg2-binary==2.9.9
 sqlalchemy==2.0.34
-pandas==2.2.0
+pandas>=2.2.3
+pyarrow>=26.0.0
